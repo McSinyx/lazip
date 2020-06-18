@@ -24,7 +24,7 @@ __all__ = ['Lazip']
 from bisect import bisect_left, bisect_right
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 from zipfile import BadZipFile, ZipFile
 
 from pip._internal.network.utils import response_chunks
@@ -69,15 +69,15 @@ class Lazip:
         self.file.__enter__()
         return self
 
-    def __exit__(self, *exc) -> Optional[bool]:
+    def __exit__(self, *exc: Any) -> Optional[bool]:
         return self.file.__exit__(*exc)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """File name."""
         return self.file.name
 
-    def seekable(self):
+    def seekable(self) -> bool:
         """Return whether random access is supported, which is True."""
         return True
 
@@ -93,7 +93,7 @@ class Lazip:
         finally:
             self.seek(pos)
 
-    def check_zip(self, range_request: bool):
+    def check_zip(self, range_request: bool) -> None:
         """Check and download until the file is a valid ZIP."""
         if not range_request:
             end = self.length - 1
@@ -129,14 +129,14 @@ class Lazip:
         """
         lslice, rslice = self.left[left:right], self.right[left:right]
         i = start = min(start, min(lslice, default=start))
-        end = min(end, min(rslice, default=end))
+        end = max(end, max(rslice, default=end))
         for j, k in zip(lslice, rslice):
             if j > i: yield i, j-1
             i = k + 1
         if i <= end: yield i, end
         self.left[left:right], self.right[left:right] = [start], [end]
 
-    def download(self, start: int, end: int):
+    def download(self, start: int, end: int) -> None:
         """Download bytes from start to end inclusively."""
         with self.stay():
             i, j = bisect_left(self.right, start), bisect_right(self.left, end)
