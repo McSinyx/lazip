@@ -1,0 +1,9 @@
+branches:
+  only:
+    - master
+    - /^\d+(\.\d+)+((a|b|rc)\d+)?(\.post\d+)?(\.dev\d+)?$/
+
+language: python
+
+install: pip install tox
+script: tox

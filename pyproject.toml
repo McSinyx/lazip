@@ -1,0 +1,24 @@
+[build-system]
+requires = ['flit_core >=2,<3']
+build-backend = 'flit_core.buildapi'
+
+[tool.flit.metadata]
+module = 'lazip'
+author = 'Nguyễn Gia Phong'
+author-email = 'mcsinyx@disroot.org'
+home-page = 'https://github.com/McSinyx/lazip'
+requires = ['pip', 'requests']
+description-file = 'README.md'
+classifiers = [
+    'Development Status :: 1 - Planning',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
+    'Natural Language :: English',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3 :: Only',
+    'Topic :: Internet :: WWW/HTTP',
+    'Typing :: Typed']
+requires-python = '>=3.6'
+keywords = 'zip,http,range,lazy'
+license = 'LGPLv3+'
