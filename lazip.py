@@ -18,7 +18,7 @@
 
 """Lazy ZIP over HTTP"""
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __all__ = ['Lazip']
 
 from bisect import bisect_left, bisect_right
@@ -27,12 +27,8 @@ from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 from zipfile import BadZipFile, ZipFile
 
-from pip._internal.network.utils import response_chunks
-from pip._internal.utils.wheel import pkg_resources_distribution_for_wheel
 from requests import Session
 from requests.models import CONTENT_CHUNK_SIZE, Response
-
-HEADERS: Dict[str, str] = {'Accept-Encoding': 'identity'}
 
 
 def init_range(stop: int, size: int) -> Iterator[Tuple[int, int]]:
@@ -54,7 +50,7 @@ class Lazip:
 
     def __init__(self, session: Session, url: str,
                  chunk_size: int = CONTENT_CHUNK_SIZE) -> None:
-        head = session.head(url, headers=HEADERS)
+        head = session.head(url)
         head.raise_for_status()
         assert head.status_code == 200
         self.session, self.url, self.chunk_size = session, url, chunk_size
@@ -104,17 +100,16 @@ class Lazip:
             self.download(start, end)
             with self.stay():
                 try:
-                    ZipFile(self)
+                    ZipFile(self)   # type: ignore
                 except BadZipFile:
                     pass
                 else:
                     break
 
     def stream_response(self, start: int, end: int,
-                        base_headers: Dict[str, str] = HEADERS) -> Response:
+                        base_headers: Dict[str, str] = {}) -> Response:
         """Return HTTP response to a range request from start to end."""
-        headers = {'Range': f'bytes={start}-{end}'}
-        headers.update(base_headers)
+        headers = {'Range': f'bytes={start}-{end}', **base_headers}
         return self.session.get(self.url, headers=headers, stream=True)
 
     def merge(self, start: int, end: int,
@@ -128,8 +123,8 @@ class Lazip:
             right (int): Index after last overlapping downloaded data
         """
         lslice, rslice = self.left[left:right], self.right[left:right]
-        i = start = min(start, min(lslice, default=start))
-        end = max(end, max(rslice, default=end))
+        i = start = min([start, *lslice[:1]])
+        end = max([end, *rslice[-1:]])
         for j, k in zip(lslice, rslice):
             if j > i: yield i, j-1
             i = k + 1
@@ -144,7 +139,8 @@ class Lazip:
                 response = self.stream_response(start, end)
                 response.raise_for_status()
                 self.seek(start)
-                for chunk in response_chunks(response, self.chunk_size):
+                for chunk in response.raw.stream(self.chunk_size,
+                                                 decode_content=False):
                     self.file.write(chunk)
 
     def read(self, size: int = -1) -> bytes:
@@ -176,12 +172,3 @@ class Lazip:
     def close(self) -> None:
         """Close the file."""
         self.file.close()
-
-
-if __name__ == '__main__':
-    url = ('https://files.pythonhosted.org/packages/17/d9/'
-           'ff8955ce17c080c956cd5eed9c2da4de139d5eeabb9f9ebf2d981acef31d/'
-           'brutalmaze-0.9.2-py3-none-any.whl')
-    with Lazip(Session(), url) as wheel:
-        print(pkg_resources_distribution_for_wheel(
-            ZipFile(wheel), 'brutalmaze', wheel.name).requires())

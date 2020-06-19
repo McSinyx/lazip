@@ -4,6 +4,7 @@ branches:
     - /^\d+(\.\d+)+((a|b|rc)\d+)?(\.post\d+)?(\.dev\d+)?$/
 
 language: python
+python: 3.8
 
 install: pip install tox
 script: tox

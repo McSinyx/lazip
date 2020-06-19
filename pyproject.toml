@@ -7,7 +7,7 @@ module = 'lazip'
 author = 'Nguyễn Gia Phong'
 author-email = 'mcsinyx@disroot.org'
 home-page = 'https://github.com/McSinyx/lazip'
-requires = ['pip', 'requests']
+requires = ['requests']
 description-file = 'README.md'
 classifiers = [
     'Development Status :: 1 - Planning',
