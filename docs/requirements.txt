@@ -1,1 +1,2 @@
 lazip
+sphinx >= 3.*
