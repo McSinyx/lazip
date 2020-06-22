@@ -18,7 +18,7 @@
 
 """Lazy ZIP over HTTP"""
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 __all__ = ['Filazy', 'Lazip']
 
 from abc import abstractmethod
@@ -33,16 +33,6 @@ from requests import Session
 from requests.models import CONTENT_CHUNK_SIZE, Response
 
 
-def init_range(stop: int, size: int) -> Iterator[Tuple[int, int]]:
-    """Return an iterator of intervals to fetch a file reversedly."""
-    start = stop - size
-    while start > 0:
-        yield start, stop-1
-        stop = start
-        start -= size
-    yield 0, stop-1
-
-
 class ReadOnlyBinaryIOWrapper(IO[bytes]):
     """Wrapper for a read-only binary I/O."""
 
@@ -51,8 +41,8 @@ class ReadOnlyBinaryIOWrapper(IO[bytes]):
 
     @property
     def mode(self) -> str:
-        """Opening mode, which is always w+b."""
-        return self.file.mode
+        """Opening mode, which is always rb."""
+        return 'rb'
 
     @property
     def name(self) -> str:
@@ -259,12 +249,12 @@ class Lazip(Filazy):
 
     def __post_init__(self) -> None:
         """Check and download until the file is a valid ZIP."""
+        end = self.length - 1
         if not self.accept_ranges:
-            end = self.length - 1
             self.ensure(0, end)
             self.left, self.right = [0], [end]
             return
-        for start, end in init_range(self.length, self.chunk_size):
+        for start in reversed(range(0, end, self.chunk_size)):
             self.ensure(start, end)
             try:
                 ZipFile(self)
